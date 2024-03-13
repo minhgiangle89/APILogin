@@ -15,7 +15,8 @@ public class DataContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
         // connect to sql server database
-        options.UseSqlServer(Configuration.GetConnectionString("WebApiDatabase"));
+        //options.UseSqlServer(Configuration.GetConnectionString("WebApiDatabase"));
+        options.UseSqlServer(Configuration.GetConnectionString("CommonDB"));
     }
 
     public DbSet<User> Users { get; set; }

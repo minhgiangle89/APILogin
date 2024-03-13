@@ -2,6 +2,10 @@
 using WebApi.Authorization;
 using WebApi.Helpers;
 using WebApi.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +25,30 @@ var builder = WebApplication.CreateBuilder(args);
 
     // configure automapper with all automapper profiles from this assembly
     services.AddAutoMapper(typeof(Program));
+    services.AddSwaggerGen(c =>
+    {
+        c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+        var jwtSecurityScheme = new OpenApiSecurityScheme
+        {
+            BearerFormat = "JWT",
+            Name = "JWT Authentication",
+            In = ParameterLocation.Header,
+            Type = SecuritySchemeType.Http,
+            Scheme = JwtBearerDefaults.AuthenticationScheme,
+            Description = "Put **_ONLY_** your JWT Bearer token on textbox below!",
 
+            Reference = new OpenApiReference
+            {
+                Id = JwtBearerDefaults.AuthenticationScheme,
+                Type = ReferenceType.SecurityScheme
+            }
+        };
+        c.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
+        c.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            { jwtSecurityScheme, Array.Empty<string>() }
+        });
+    });
     // configure strongly typed settings object
     services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 
@@ -33,11 +60,11 @@ var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
 // migrate any database changes on startup (includes initial db creation)
-using (var scope = app.Services.CreateScope())
-{
-    var dataContext = scope.ServiceProvider.GetRequiredService<DataContext>();    
-    dataContext.Database.Migrate();
-}
+//using (var scope = app.Services.CreateScope())
+//{
+//    var dataContext = scope.ServiceProvider.GetRequiredService<DataContext>();    
+//    dataContext.Database.Migrate();
+//}
 
 // configure HTTP request pipeline
 {
@@ -52,8 +79,9 @@ using (var scope = app.Services.CreateScope())
 
     // custom jwt auth middleware
     app.UseMiddleware<JwtMiddleware>();
-
+    app.UseSwagger();
+    app.UseSwaggerUI();
     app.MapControllers();
 }
 
-app.Run("http://localhost:4000");
+app.Run();
